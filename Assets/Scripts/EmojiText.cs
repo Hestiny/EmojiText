@@ -5,11 +5,15 @@ using System.Text.RegularExpressions;
 
 public class EmojiText : Text
 {
+    //调整图片y轴偏移量
+    public float offsetY = 0;
     private const float ICON_SCALE_OF_DOUBLE_SYMBOLE = 0.7f;
     public override float preferredWidth => cachedTextGeneratorForLayout.GetPreferredWidth(emojiText, GetGenerationSettings(rectTransform.rect.size)) / pixelsPerUnit;
     public override float preferredHeight => cachedTextGeneratorForLayout.GetPreferredHeight(emojiText, GetGenerationSettings(rectTransform.rect.size)) / pixelsPerUnit;
 
-    private string emojiText => Regex.Replace(text, "\\[[0-9]+\\]", "XX");
+    private string emojiTag = "XX";
+
+    private string emojiText => Regex.Replace(text, "\\[[0-9]+\\]", emojiTag);
     private static Dictionary<string, EmojiInfo> m_EmojiIndexDict = null;
 
     struct EmojiInfo
@@ -17,13 +21,6 @@ public class EmojiText : Text
         public float x;
         public float y;
         public float size;
-    }
-
-    private string GetEmojiText(string text)
-    {
-        string emojiText = Regex.Replace(text, "\\[[0-9]+\\]", "XX");
-        string curText = emojiText.Replace(" ", "A");
-        return curText;
     }
 
     readonly UIVertex[] m_TempVerts = new UIVertex[4];
@@ -62,8 +59,10 @@ public class EmojiText : Text
             int nParcedCount = 0;
             //[1] [123] 替换成#的下标偏移量			
             int nOffset = 0;
+            //剔除富文本标签
+            var tmpText = Regex.Replace(text, "<[a-z\\/=0-9]+>", "");
             //空格不会绘制mesh 需要剔除空格的长度
-            MatchCollection matches = Regex.Matches(text.Replace(" ", ""), "\\[[0-9]+\\]");
+            MatchCollection matches = Regex.Matches(tmpText.Replace(" ", ""), "\\[[0-9]+\\]");
             for (int i = 0; i < matches.Count; i++)
             {
                 EmojiInfo info;
@@ -148,10 +147,10 @@ public class EmojiText : Text
                     m_TempVerts[1] = verts[t + 2];//3
                     m_TempVerts[0] = verts[t + 3];//4
 
-                    m_TempVerts[0].position += new Vector3(fStartOffset, -fHeightOffsetHalf, 0);
-                    m_TempVerts[1].position += new Vector3(fStartOffset - fCharWidth + emojiSize, -fHeightOffsetHalf, 0);
-                    m_TempVerts[2].position += new Vector3(fStartOffset - fCharWidth + emojiSize, fHeightOffsetHalf, 0);
-                    m_TempVerts[3].position += new Vector3(fStartOffset, fHeightOffsetHalf, 0);
+                    m_TempVerts[0].position += new Vector3(fStartOffset, offsetY - fHeightOffsetHalf, 0);
+                    m_TempVerts[1].position += new Vector3(fStartOffset - fCharWidth + emojiSize, offsetY - fHeightOffsetHalf, 0);
+                    m_TempVerts[2].position += new Vector3(fStartOffset - fCharWidth + emojiSize, offsetY + fHeightOffsetHalf, 0);
+                    m_TempVerts[3].position += new Vector3(fStartOffset, offsetY + fHeightOffsetHalf, 0);
 
                     m_TempVerts[0].position *= unitsPerPixel;
                     m_TempVerts[1].position *= unitsPerPixel;
